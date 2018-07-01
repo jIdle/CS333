@@ -93,3 +93,17 @@ sys_halt(void)
   outw( 0x604, 0x0 | 0x2000);
   return 0;
 }
+
+#ifdef CS333_P1
+int
+sys_date(void)
+{
+    struct rtcdate *d;
+    //struct rtcdate *d = (struct rtcdate *)0x801065e6;
+    //__asm__ ("movl %%eip, %0;" : "=r" (d));
+    if(argptr(0, (void*)&d, sizeof(struct rtcdate)) < 0)
+        return -1;
+    cmostime(d);
+    return 0;
+}
+#endif

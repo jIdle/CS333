@@ -82,6 +82,7 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+  p->start_ticks = ticks;
   return p;
 }
 
@@ -510,22 +511,35 @@ procdump(void)
   struct proc *p;
   char *state;
   uint pc[10];
+  int size = 0;
 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+  cprintf("\nPID  State  Name  Elapsed  PCs");
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ 
+    const char * s = p->name;
+    const char * start = p->name;
+    while(*s)
+        s++;
+    size = s - start;
     if(p->state == UNUSED)
       continue;
     if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
       state = states[p->state];
     else
       state = "???";
-    cprintf("%d %s %s", p->pid, state, p->name);
+    cprintf("\n%d    %s %s ", p->pid, state, p->name);
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
-      for(i=0; i<10 && pc[i] != 0; i++)
-        cprintf(" %p", pc[i]);
+      for(int k = 0; k < (4 - size); ++k){
+        cprintf(" ");
+      }
+      cprintf(" %d    ", (ticks - p->start_ticks));
+      for(i=0; i<10 && pc[i] != 0; i++){
+        cprintf("%p ", pc[i]);
+      }
     }
-    cprintf("\n");
+    //cprintf("\n");
   }
+  cprintf("\n");
 }
 
 
