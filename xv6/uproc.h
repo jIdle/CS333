@@ -1,6 +1,6 @@
 #define STRMAX 32
 
-struct uproc {
+typedef struct uproc {
     uint pid;
     uint uid;
     uint gid;
@@ -10,4 +10,4 @@ struct uproc {
     char state[STRMAX];
     uint size;
     char name[STRMAX];
-};
+}uproc;

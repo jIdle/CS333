@@ -57,10 +57,6 @@ allocproc(void)
   return 0;
 
 found:
-#ifdef CS333_P2
-  p->cpu_ticks_in = 0;
-  p->cpu_ticks_total = 0;
-#endif
   p->state = EMBRYO;
   p->pid = nextpid++;
   release(&ptable.lock);
@@ -88,6 +84,10 @@ found:
 
 #ifdef CS333_P1
   p->start_ticks = ticks;
+#endif
+#ifdef CS333_P2
+  p->cpu_ticks_in = 0;
+  p->cpu_ticks_total = 0;
 #endif
   return p;
 }
@@ -533,11 +533,7 @@ procdump(void)
   char *state;
   uint pc[10];
 #ifdef CS333_P1
-  cprintf("\nPID\t");
-  cprintf("State\t");
-  cprintf("Name\t");
-  cprintf("Elapsed\t\t");
-  cprintf("PCs");
+  cprintf("\nPID\tState\tName\tElapsed\t\tPCs");
 #endif
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ 
     if(p->state == UNUSED)

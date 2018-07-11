@@ -1,3 +1,6 @@
+#ifdef CS333_P1
+#define NULL (void*)0
+#endif
 #include "types.h"
 #include "x86.h"
 #include "defs.h"
@@ -122,6 +125,8 @@ sys_getgid(void)
 int
 sys_getppid(void)
 {
+    if(!proc->parent)
+        return proc->pid;
     return proc->parent->pid;
 }
 
@@ -130,6 +135,8 @@ sys_setuid(void)
 {
     int uid;
     if(argint(0, &uid))
+        return -1;
+    else if(uid < 0 || uid > 32767)
         return -1;
     proc->uid = uid;
     return 0;
@@ -141,13 +148,48 @@ sys_setgid(void)
     int gid;
     if(argint(0, &gid))
         return -1;
+    else if(gid < 0 || gid > 32767)
+        return -1;
     proc->gid = gid;
     return 0;
 }
 
+// Trying to get this system call to work. Have to decide how I want to deal with
+// procTable being a double pointer. I can try to jerry rig the argptr function
+// to give me the procTable from ps.c correctly, OR I can just set it back to a
+// single pointer and do this the way it's supposed to. We'll see how I feel today.
 int
 sys_getprocs(void)
 {
+    struct uproc * temp = NULL
+    if(argptr(0, (void*)temp, sizeof(struct uproc)) < 0)
+        return -1;
     return 0;
 }
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
