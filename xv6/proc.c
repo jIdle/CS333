@@ -57,6 +57,10 @@ allocproc(void)
   return 0;
 
 found:
+#ifdef CS333_P2
+  p->cpu_ticks_in = 0;
+  p->cpu_ticks_total = 0;
+#endif
   p->state = EMBRYO;
   p->pid = nextpid++;
   release(&ptable.lock);
@@ -82,7 +86,9 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+#ifdef CS333_P1
   p->start_ticks = ticks;
+#endif
   return p;
 }
 
@@ -113,6 +119,11 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
+
+#ifdef CS333_P2
+  p->uid = FUID;
+  p->gid = FGID;
+#endif
 }
 
 // Grow current process's memory by n bytes.
@@ -158,6 +169,10 @@ fork(void)
   np->sz = proc->sz;
   np->parent = proc;
   *np->tf = *proc->tf;
+#ifdef CS333_P2
+  np->uid = proc->uid;
+  np->gid = proc->gid;
+#endif
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
@@ -310,6 +325,10 @@ scheduler(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
+      
+#ifdef CS333_P2
+      p->cpu_ticks_in = ticks;
+#endif
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -338,7 +357,6 @@ scheduler(void)
 void
 scheduler(void)
 {
-
 }
 #endif
 
@@ -358,6 +376,9 @@ sched(void)
   if(readeflags()&FL_IF)
     panic("sched interruptible");
   intena = cpu->intena;
+#ifdef CS333_P2
+  proc->cpu_ticks_total += (ticks - proc->cpu_ticks_in);
+#endif
   swtch(&proc->context, cpu->scheduler);
   cpu->intena = intena;
 }
@@ -511,33 +532,42 @@ procdump(void)
   struct proc *p;
   char *state;
   uint pc[10];
-  int size = 0;
-
-  cprintf("\nPID  State  Name  Elapsed  PCs");
+#ifdef CS333_P1
+  cprintf("\nPID\t");
+  cprintf("State\t");
+  cprintf("Name\t");
+  cprintf("Elapsed\t\t");
+  cprintf("PCs");
+#endif
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ 
-    const char * s = p->name;
-    const char * start = p->name;
-    while(*s)
-        s++;
-    size = s - start;
     if(p->state == UNUSED)
       continue;
     if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
       state = states[p->state];
     else
       state = "???";
-    cprintf("\n%d    %s %s ", p->pid, state, p->name);
+#ifdef CS333_P1
+    cprintf("\n%d\t%s\t%s\t", p->pid, state, p->name);
+#else
+    cprintf("%d %s %s", p->pid, state, p->name);
+#endif
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
-      for(int k = 0; k < (4 - size); ++k){
-        cprintf(" ");
-      }
-      cprintf(" %d    ", (ticks - p->start_ticks));
+#ifdef CS333_P1
+      int dispTime = ticks - p->start_ticks;
+      cprintf("%d.%d\t\t", dispTime/1000, dispTime%1000);
       for(i=0; i<10 && pc[i] != 0; i++){
         cprintf("%p ", pc[i]);
       }
+#else
+      for(i=0; i<10 && pc[i] != 0; i++){
+        cprintf(" %p ", pc[i]);
+      }
+#endif
     }
-    //cprintf("\n");
+#ifndef CS333_P1
+    cprintf("\n");
+#endif
   }
   cprintf("\n");
 }
@@ -552,9 +582,9 @@ stateListAdd(struct proc** head, struct proc** tail, struct proc* p)
     *tail = p;
     p->next = 0;
   } else{
-    *tail->next = p;
-    *tail = *tail->next;
-    *tail->next = 0;
+    (*tail)->next = p;
+    *tail = (*tail)->next;
+    (*tail)->next = 0;
   }
 }
 
@@ -582,7 +612,7 @@ stateListRemove(struct proc** head, struct proc** tail, struct proc* p)
   struct proc* previous = 0;
 
   if(current == p){
-    *head = *head->next;
+    *head = (*head)->next;
     // prevent tail remaining assigned when we've removed the only item
     // on the list
     if(*tail == p){
@@ -608,7 +638,7 @@ stateListRemove(struct proc** head, struct proc** tail, struct proc* p)
   // Process found. Set the appropriate next pointer.
   if(current == *tail){
     *tail = previous;
-    *tail->next = 0;
+    (*tail)->next = 0;
   } else{
     previous->next = current->next;
   }

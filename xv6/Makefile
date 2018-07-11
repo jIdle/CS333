@@ -1,7 +1,7 @@
 # Set flag to correct CS333 project number: 1, 2, ...
 # 0 == original xv6-pdx distribution functionality
-CS333_PROJECT ?=1
-CS333_CFLAGS =
+CS333_PROJECT ?=2
+CS333_CFLAGS = -DUSE_BUILTINS_NOT_YET
 CS333_UPROGS =
 CS333_TPROGS =
 PRINT_SYSCALLS ?=0

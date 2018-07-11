@@ -1,4 +1,4 @@
-// Example for testing part of CS333 P2. 
+// Example for testing part of CS333 P2.
 // This is by NO MEANS a complete test.
 #ifdef CS333_P2
 #include "types.h"
@@ -75,10 +75,10 @@ invalidTest(uint nval)
     printf(2, "FAILURE! The setgid system call indicates success\n");
 
   printf(1, "Setting UID to %d. This test should FAIL\n", -1);
-  if (setgid(-1) < 0)
-    printf(1, "SUCCESS! The setgid sytem call indicated failure\n");
+  if (setuid(-1) < 0)
+    printf(1, "SUCCESS! The setuid sytem call indicated failure\n");
   else
-    printf(2, "FAILURE! The setgid system call indicates success\n");
+    printf(2, "FAILURE! The setuid system call indicates success\n");
 }
 
 static int
@@ -98,7 +98,7 @@ testuidgid(void)
   ppid = getppid();
   printf(1, "My parent process is: %d\n", ppid);
 
-  // fork tests to demonstrate UID/GID inheritance 
+  // fork tests to demonstrate UID/GID inheritance
   nval = 111;
   forkTest(nval);
 

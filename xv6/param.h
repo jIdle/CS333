@@ -11,5 +11,9 @@
 #define LOGSIZE      (MAXOPBLOCKS*3)  // max data blocks in on-disk log
 #define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
 // #define FSSIZE       1000  // size of file system in blocks
-#define FSSIZE       2000  // size of file system in blocks  // CS333 requires a larger FS.
+#define FSSIZE     2000  // size of file system in blocks  // CS333 requires a larger FS.
 
+#ifdef CS333_P2
+#define FUID          0  // default uid assigned to the first process 
+#define FGID          0  // default gid assigned to the first process
+#endif

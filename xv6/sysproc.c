@@ -99,11 +99,55 @@ int
 sys_date(void)
 {
     struct rtcdate *d;
-    //struct rtcdate *d = (struct rtcdate *)0x801065e6;
-    //__asm__ ("movl %%eip, %0;" : "=r" (d));
     if(argptr(0, (void*)&d, sizeof(struct rtcdate)) < 0)
         return -1;
     cmostime(d);
+    return 0;
+}
+#endif
+
+#ifdef CS333_P2
+int
+sys_getuid(void)
+{
+    return proc->uid;
+}
+
+int
+sys_getgid(void)
+{
+    return proc->gid;
+}
+
+int
+sys_getppid(void)
+{
+    return proc->parent->pid;
+}
+
+int
+sys_setuid(void)
+{
+    int uid;
+    if(argint(0, &uid))
+        return -1;
+    proc->uid = uid;
+    return 0;
+}
+
+int
+sys_setgid(void)
+{
+    int gid;
+    if(argint(0, &gid))
+        return -1;
+    proc->gid = gid;
+    return 0;
+}
+
+int
+sys_getprocs(void)
+{
     return 0;
 }
 #endif
