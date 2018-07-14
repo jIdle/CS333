@@ -3,61 +3,68 @@
 #include "user.h"
 #include "uproc.h"
 
-#define MAX 64 // This is the maximum number of entries uproc array will allow.
-#define NULL (void*)0
+#define MAX 72 // This is the maximum number of entries uproc array will allow.
+#define NULL (void *)0
 
-void display(int max, struct uproc ** procTable);           // Displays uproc array data.
-void rel(int lower, int upper, struct uproc ** procTable);  // Releases dynamically allocated memory.
+void display(int activeProcs, uproc * procTable);           // Displays uproc array data.
+void init(uproc * procTable);
 
 int
 main(void)
 {
     // Allocate memory for array of uproc structs.
-    uproc ** procTable = (uproc**)malloc(MAX * sizeof(uproc*));
-    for(int i = 0; i < MAX; ++i)
-        procTable[i] = (uproc*)malloc(sizeof(uproc));
-    int ptableSize = getprocs(MAX, *procTable);
+    uproc * procTable = (uproc*)malloc(MAX*sizeof(uproc));
+    int activeProcs = getprocs(MAX, procTable);
 
-    // If ptableSize is -1, that means MAX is smaller than the number of actives processes.
-    if(ptableSize == -1){
-        rel(0, MAX, procTable);
+    // If activeProcs is -1, that means MAX is smaller than the number of actives processes.
+    if(activeProcs == -1){
         free(procTable);
         printf(1, "Raise maximum entries in ps.c to view running processes.\n");
         exit();
     }
 
-    // Free unused memory and display uproc array data.
-    rel(ptableSize, MAX, procTable);
-    display(ptableSize, procTable);
-    rel(0, ptableSize, procTable);
+    display(activeProcs, procTable);
     free(procTable);
     exit();
 }
 
-void display(int max, struct uproc ** procTable){
+void display(int activeProcs, uproc * procTable){
     printf(1, "PID\tUID\tGID\tPPID\tElapsed\t\tCPU\tState\tSize\tName\n");
-    for(int i = 0; i < max; ++i){
-        printf(1, "%d\t%d\t%d\t%d\t%d\t%d\t%s\t%d\t%s\n",
-                procTable[i]->pid,
-                procTable[i]->uid,
-                procTable[i]->gid,
-                procTable[i]->ppid,
-                procTable[i]->elapsed_ticks,
-                procTable[i]->CPU_total_ticks,
-                procTable[i]->state,
-                procTable[i]->size,
-                procTable[i]->name);
+    int index = 0;
+    int counter = 0;
+    while(counter != activeProcs){
+        if(procTable[index].size){
+            printf(1, "%d\t%d\t%d\t%d\t%d.%d\t\t%d\t%s\t%d\t%s\n",
+                    procTable[index].pid,
+                    procTable[index].uid,
+                    procTable[index].gid,
+                    procTable[index].ppid,
+                    procTable[index].elapsed_ticks/1000,
+                    procTable[index].elapsed_ticks%1000,
+                    procTable[index].CPU_total_ticks,
+                    procTable[index].state,
+                    procTable[index].size,
+                    procTable[index].name);
+            ++counter;
+        }
+        ++index;
     }
+    //for(int i = 0; i < MAX; ++i){
+    //    if(strcmp(procTable[i].state, "unused") != 0 && strcmp(procTable[i].state, "embryo") != 0){
+    //        printf(1, "%d\t%d\t%d\t%d\t%d.%d\t\t%d\t%s\t%d\t%s\n",
+    //                procTable[i].pid,
+    //                procTable[i].uid,
+    //                procTable[i].gid,
+    //                procTable[i].ppid,
+    //                procTable[i].elapsed_ticks/1000,
+    //                procTable[i].elapsed_ticks%1000,
+    //                procTable[i].CPU_total_ticks,
+    //                procTable[i].state,
+    //                procTable[i].size,
+    //                procTable[i].name);
+    //    }
+    //}
 }
-
-void rel(int lower, int upper, struct uproc ** procTable){
-    for(int i = lower; i < upper; ++i){
-        free(procTable[i]);
-        procTable[i] = NULL;
-    }
-}
-
-//struct uproc * procTable = (uproc*)malloc(max*sizeof(uproc));
 #endif
 
 

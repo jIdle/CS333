@@ -6,6 +6,9 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "uproc.h"
+
+#define NULL (void *)0
 
 struct {
   struct spinlock lock;
@@ -121,6 +124,7 @@ userinit(void)
   p->state = RUNNABLE;
 
 #ifdef CS333_P2
+  p->parent = NULL;
   p->uid = FUID;
   p->gid = FGID;
 #endif
@@ -512,12 +516,21 @@ kill(int pid)
 }
 #endif
 
+//static char *states[] = {
+//  [UNUSED]    "unused",
+//  [EMBRYO]    "embryo",
+//  [SLEEPING]  "sleep ",
+//  [RUNNABLE]  "runble",
+//  [RUNNING]   "run   ",
+//  [ZOMBIE]    "zombie"
+//};
+
 static char *states[] = {
   [UNUSED]    "unused",
   [EMBRYO]    "embryo",
-  [SLEEPING]  "sleep ",
-  [RUNNABLE]  "runble",
-  [RUNNING]   "run   ",
+  [SLEEPING]  "sleep",
+  [RUNNABLE]  "runnable",
+  [RUNNING]   "running",
   [ZOMBIE]    "zombie"
 };
 
@@ -568,6 +581,42 @@ procdump(void)
   cprintf("\n");
 }
 
+#ifdef CS333_P2
+// New function I'm making for copying ptable stuff and sending it back to sysproc.c.
+int
+copyprocs(int max, uproc * procTable)
+{
+    int activeProcs = 0;
+    struct proc * pPtr = ptable.proc;
+
+    // This loops copies data from the ptable processes my uproc structs.
+    for(int i = 0; i < NPROC; ++i){
+        if(i > max)
+            return -1;
+        procTable[i].pid              = pPtr[i].pid;
+        procTable[i].uid              = pPtr[i].uid;
+        procTable[i].gid              = pPtr[i].gid;
+        if(!pPtr[i].parent)
+            procTable[i].ppid         = pPtr[i].pid;
+        else
+            procTable[i].ppid         = pPtr[i].parent->pid;
+        procTable[i].elapsed_ticks    = ticks - pPtr[i].start_ticks;
+        procTable[i].CPU_total_ticks  = pPtr[i].cpu_ticks_total;
+        procTable[i].size             = pPtr[i].sz;
+
+        char * temp = states[pPtr[i].state];
+        for(int j = 0; j < strlen(temp); ++j)
+            procTable[i].state[j] = temp[j];
+        for(int j = 0; j < strlen(pPtr[i].name); ++j)
+            procTable[i].name[j] = pPtr[i].name[j];
+
+        if(strncmp(temp, "unused", 9) != 0 && strncmp(temp, "embryo", 9) != 0)
+            ++activeProcs;
+        cprintf("iteration: %d\n", i);
+    }
+    return activeProcs; // Should change to hand back the number of active procs in ptable.
+}
+#endif
 
 #ifdef CS333_P3P4
 static void
@@ -673,7 +722,7 @@ initFreeList(void)
 
   for(p = ptable.proc; p < ptable.proc + NPROC; ++p){
     p->state = UNUSED;
-    state_list_add(&ptable.pLists.free, &ptable.pLists.free_tail, p);
+    stateListAdd(&ptable.pLists.free, &ptable.pLists.free_tail, p);
   }
 }
 #endif

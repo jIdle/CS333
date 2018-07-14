@@ -119,6 +119,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             copyprocs(int max, struct uproc * procTable);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

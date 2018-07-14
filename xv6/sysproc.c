@@ -1,6 +1,3 @@
-#ifdef CS333_P1
-#define NULL (void*)0
-#endif
 #include "types.h"
 #include "x86.h"
 #include "defs.h"
@@ -9,6 +6,12 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#ifdef CS333_P1
+#define NULL (void*)0
+#endif
+#ifdef CS333_P2
+#include "uproc.h"
+#endif
 
 int
 sys_fork(void)
@@ -113,12 +116,16 @@ sys_date(void)
 int
 sys_getuid(void)
 {
+    if(proc->uid < 0 || proc->uid > 32767)
+        return -1;
     return proc->uid;
 }
 
 int
 sys_getgid(void)
 {
+    if(proc->gid < 0 || proc->gid > 32767)
+        return -1;
     return proc->gid;
 }
 
@@ -127,6 +134,8 @@ sys_getppid(void)
 {
     if(!proc->parent)
         return proc->pid;
+    if(proc->parent->pid < 0 || proc->parent->pid > 32767)
+        return -1;
     return proc->parent->pid;
 }
 
@@ -154,42 +163,14 @@ sys_setgid(void)
     return 0;
 }
 
-// Trying to get this system call to work. Have to decide how I want to deal with
-// procTable being a double pointer. I can try to jerry rig the argptr function
-// to give me the procTable from ps.c correctly, OR I can just set it back to a
-// single pointer and do this the way it's supposed to. We'll see how I feel today.
 int
 sys_getprocs(void)
 {
-    struct uproc * temp = NULL
-    if(argptr(0, (void*)temp, sizeof(struct uproc)) < 0)
+    int max = 0;
+    uproc * procTable = NULL;
+    if(argint(0, &max) || argptr(1, (void*)&procTable, sizeof(uproc)))
         return -1;
-    return 0;
+    int activeProcs = copyprocs(max, procTable);
+    return activeProcs;
 }
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
