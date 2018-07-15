@@ -170,7 +170,20 @@ sys_getprocs(void)
     uproc * procTable = NULL;
     if(argint(0, &max) || argptr(1, (void*)&procTable, sizeof(uproc)))
         return -1;
+    if(max > 72){
+        cprintf("\nIf you want to view all possible processes, set the process cap to 64.\n");
+        return -1;
+    }
     int activeProcs = copyprocs(max, procTable);
     return activeProcs;
+}
+
+int
+sys_time(void)
+{
+    char * name = NULL;
+    if(argptr(0, (void*)&name, sizeof(char*)))
+        return -1;
+    return 0;
 }
 #endif

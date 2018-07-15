@@ -582,17 +582,19 @@ procdump(void)
 }
 
 #ifdef CS333_P2
-// New function I'm making for copying ptable stuff and sending it back to sysproc.c.
 int
 copyprocs(int max, uproc * procTable)
 {
+    acquire(&ptable.lock);
     int activeProcs = 0;
     struct proc * pPtr = ptable.proc;
 
     // This loops copies data from the ptable processes my uproc structs.
     for(int i = 0; i < NPROC; ++i){
-        if(i > max)
-            return -1;
+        if(i >= max){
+            cprintf("\nProcess cap lower than ptable capacity. There may be processes missing in display.\n");
+            break;
+        }
         procTable[i].pid              = pPtr[i].pid;
         procTable[i].uid              = pPtr[i].uid;
         procTable[i].gid              = pPtr[i].gid;
@@ -612,9 +614,9 @@ copyprocs(int max, uproc * procTable)
 
         if(strncmp(temp, "unused", 9) != 0 && strncmp(temp, "embryo", 9) != 0)
             ++activeProcs;
-        cprintf("iteration: %d\n", i);
     }
-    return activeProcs; // Should change to hand back the number of active procs in ptable.
+    release(&ptable.lock);
+    return activeProcs;
 }
 #endif
 

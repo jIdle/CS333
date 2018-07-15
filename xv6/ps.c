@@ -3,7 +3,7 @@
 #include "user.h"
 #include "uproc.h"
 
-#define MAX 72 // This is the maximum number of entries uproc array will allow.
+#define MAX 64 // This is the maximum number of entries uproc array will allow.
 #define NULL (void *)0
 
 void display(int activeProcs, uproc * procTable);           // Displays uproc array data.
@@ -29,13 +29,14 @@ main(void)
 }
 
 void display(int activeProcs, uproc * procTable){
-    printf(1, "PID\tUID\tGID\tPPID\tElapsed\t\tCPU\tState\tSize\tName\n");
+    printf(1, "PID\tName\tPID\tGID\tPPID\tElapsed\t\tCPU\tState\tSize\n");
     int index = 0;
     int counter = 0;
     while(counter != activeProcs){
         if(procTable[index].size){
-            printf(1, "%d\t%d\t%d\t%d\t%d.%d\t\t%d\t%s\t%d\t%s\n",
+            printf(1, "%d\t%s\t%d\t%d\t%d\t%d.%d\t\t%d\t%s\t%d\n",
                     procTable[index].pid,
+                    procTable[index].name,
                     procTable[index].uid,
                     procTable[index].gid,
                     procTable[index].ppid,
@@ -43,27 +44,11 @@ void display(int activeProcs, uproc * procTable){
                     procTable[index].elapsed_ticks%1000,
                     procTable[index].CPU_total_ticks,
                     procTable[index].state,
-                    procTable[index].size,
-                    procTable[index].name);
+                    procTable[index].size);
             ++counter;
         }
         ++index;
     }
-    //for(int i = 0; i < MAX; ++i){
-    //    if(strcmp(procTable[i].state, "unused") != 0 && strcmp(procTable[i].state, "embryo") != 0){
-    //        printf(1, "%d\t%d\t%d\t%d\t%d.%d\t\t%d\t%s\t%d\t%s\n",
-    //                procTable[i].pid,
-    //                procTable[i].uid,
-    //                procTable[i].gid,
-    //                procTable[i].ppid,
-    //                procTable[i].elapsed_ticks/1000,
-    //                procTable[i].elapsed_ticks%1000,
-    //                procTable[i].CPU_total_ticks,
-    //                procTable[i].state,
-    //                procTable[i].size,
-    //                procTable[i].name);
-    //    }
-    //}
 }
 #endif
 
