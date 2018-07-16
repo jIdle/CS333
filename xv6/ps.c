@@ -6,7 +6,7 @@
 #define MAX 64 // This is the maximum number of entries uproc array will allow.
 #define NULL (void *)0
 
-void display(int activeProcs, uproc * procTable);           // Displays uproc array data.
+void display(int activeProcs, uproc * procTable); // Displays uproc array data.
 void init(uproc * procTable);
 
 int
@@ -22,19 +22,18 @@ main(void)
         printf(1, "Raise maximum entries in ps.c to view running processes.\n");
         exit();
     }
-
     display(activeProcs, procTable);
     free(procTable);
     exit();
 }
 
 void display(int activeProcs, uproc * procTable){
-    printf(1, "PID\tName\tPID\tGID\tPPID\tElapsed\t\tCPU\tState\tSize\n");
+    printf(1, "PID\tName\tUID\tGID\tPPID\tElapsed\t\tCPU\tState\tSize\n");
     int index = 0;
     int counter = 0;
     while(counter != activeProcs){
         if(procTable[index].size){
-            printf(1, "%d\t%s\t%d\t%d\t%d\t%d.%d\t\t%d\t%s\t%d\n",
+            printf(1, "%d\t%s\t%d\t%d\t%d\t%d.%d\t\t%d.%d\t%s\t%d\n",
                     procTable[index].pid,
                     procTable[index].name,
                     procTable[index].uid,
@@ -42,7 +41,8 @@ void display(int activeProcs, uproc * procTable){
                     procTable[index].ppid,
                     procTable[index].elapsed_ticks/1000,
                     procTable[index].elapsed_ticks%1000,
-                    procTable[index].CPU_total_ticks,
+                    procTable[index].CPU_total_ticks/1000,
+                    procTable[index].CPU_total_ticks%1000,
                     procTable[index].state,
                     procTable[index].size);
             ++counter;

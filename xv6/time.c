@@ -2,30 +2,21 @@
 #include "types.h"
 #include "user.h"
 int
-main(void)
+main(int argc, char *argv[])
 {
-    printf(1, "\nStarting time command...\n");
-
+    char * argv2[argc];
+    argv2[argc - 1] = 0;
+    for(int i = 0; i < argc - 1; ++i){
+        argv2[i] = argv[i + 1];
+    }
+    uint start = uptime();
     if(fork() == 0){
-        char * argv[3];
-        argv[0] = "echo";
-        argv[1] = "hello";
-        argv[2] = 0;
-        exec("echo", argv);
+        exec(argv2[0], argv2);
         exit();
     }
     wait();
-    if(fork() == 0){
-        char * argv[3];
-        argv[0] = "mkdir";
-        argv[1] = "booty";
-        argv[2] = 0;
-        exec("mkdir", argv);
-        exit();
-    }
-    printf(1, "\nFinished.\n");
-
+    uint total = uptime() - start;
+    printf(1, "\n%s ran in %d.%d seconds.\n", argv2[0], total/1000, total%1000);
     exit();
 }
-
 #endif

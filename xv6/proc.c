@@ -546,7 +546,7 @@ procdump(void)
   char *state;
   uint pc[10];
 #ifdef CS333_P1
-  cprintf("\nPID\tState\tName\tElapsed\t\tPCs");
+  cprintf("\nPID\tName\tUID\tGID\tPPID\tElapsed\t\tCPU\tState\tSize\tPCs");
 #endif
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ 
     if(p->state == UNUSED)
@@ -555,16 +555,25 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
-#ifdef CS333_P1
-    cprintf("\n%d\t%s\t%s\t", p->pid, state, p->name);
-#else
+#ifndef CS333_P1
     cprintf("%d %s %s", p->pid, state, p->name);
 #endif
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
 #ifdef CS333_P1
       int dispTime = ticks - p->start_ticks;
-      cprintf("%d.%d\t\t", dispTime/1000, dispTime%1000);
+      cprintf("\n%d\t%s\t%d\t%d\t%d\t%d.%d\t\t%d.%d\t%s\t%d\t", 
+              p->pid, 
+              p->name, 
+              p->uid, 
+              p->gid, 
+              h_getppid(p), 
+              dispTime/1000, 
+              dispTime%1000,
+              p->cpu_ticks_total/1000,
+              p->cpu_ticks_total%1000,
+              state,
+              p->sz);
       for(i=0; i<10 && pc[i] != 0; i++){
         cprintf("%p ", pc[i]);
       }
@@ -578,45 +587,54 @@ procdump(void)
     cprintf("\n");
 #endif
   }
-  cprintf("\n");
+  cprintf("\n\n");
 }
 
 #ifdef CS333_P2
+int h_getppid(struct proc * p)
+{
+  if(!p->parent)
+    return p->pid;
+  if(p->parent->pid < 0 || p->parent->pid > 32767)
+    return -1;
+  return p->parent->pid;
+}
+
 int
 copyprocs(int max, uproc * procTable)
 {
-    acquire(&ptable.lock);
-    int activeProcs = 0;
-    struct proc * pPtr = ptable.proc;
+  acquire(&ptable.lock);
+  int activeProcs = 0;
+  struct proc * pPtr = ptable.proc;
 
-    // This loops copies data from the ptable processes my uproc structs.
-    for(int i = 0; i < NPROC; ++i){
-        if(i >= max){
-            cprintf("\nProcess cap lower than ptable capacity. There may be processes missing in display.\n");
-            break;
-        }
-        procTable[i].pid              = pPtr[i].pid;
-        procTable[i].uid              = pPtr[i].uid;
-        procTable[i].gid              = pPtr[i].gid;
-        if(!pPtr[i].parent)
-            procTable[i].ppid         = pPtr[i].pid;
-        else
-            procTable[i].ppid         = pPtr[i].parent->pid;
-        procTable[i].elapsed_ticks    = ticks - pPtr[i].start_ticks;
-        procTable[i].CPU_total_ticks  = pPtr[i].cpu_ticks_total;
-        procTable[i].size             = pPtr[i].sz;
-
-        char * temp = states[pPtr[i].state];
-        for(int j = 0; j < strlen(temp); ++j)
-            procTable[i].state[j] = temp[j];
-        for(int j = 0; j < strlen(pPtr[i].name); ++j)
-            procTable[i].name[j] = pPtr[i].name[j];
-
-        if(strncmp(temp, "unused", 9) != 0 && strncmp(temp, "embryo", 9) != 0)
-            ++activeProcs;
+  // This loops copies data from the ptable processes my uproc structs.
+  for(int i = 0; i < NPROC; ++i){
+    if(i >= max){
+      cprintf("\nProcess cap lower than ptable capacity. There may be processes missing in display.\n");
+      break;
     }
-    release(&ptable.lock);
-    return activeProcs;
+    procTable[i].pid              = pPtr[i].pid;
+    procTable[i].uid              = pPtr[i].uid;
+    procTable[i].gid              = pPtr[i].gid;
+    if(!pPtr[i].parent)
+      procTable[i].ppid           = pPtr[i].pid;
+    else
+      procTable[i].ppid           = pPtr[i].parent->pid;
+    procTable[i].elapsed_ticks    = ticks - pPtr[i].start_ticks;
+    procTable[i].CPU_total_ticks  = pPtr[i].cpu_ticks_total;
+    procTable[i].size             = pPtr[i].sz;
+
+    char * temp = states[pPtr[i].state];
+    for(int j = 0; j < strlen(temp); ++j)
+      procTable[i].state[j] = temp[j];
+    for(int j = 0; j < strlen(pPtr[i].name); ++j)
+      procTable[i].name[j] = pPtr[i].name[j];
+
+    if(strncmp(temp, "unused", 9) != 0 && strncmp(temp, "embryo", 9) != 0)
+      ++activeProcs;
+  }
+  release(&ptable.lock);
+  return activeProcs;
 }
 #endif
 

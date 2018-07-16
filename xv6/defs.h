@@ -119,7 +119,10 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+#ifdef CS333_P2
 int             copyprocs(int max, struct uproc * procTable);
+int             h_getppid(struct proc * p);
+#endif
 
 // swtch.S
 void            swtch(struct context**, struct context*);

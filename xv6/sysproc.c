@@ -104,11 +104,11 @@ sys_halt(void)
 int
 sys_date(void)
 {
-    struct rtcdate *d;
-    if(argptr(0, (void*)&d, sizeof(struct rtcdate)) < 0)
-        return -1;
-    cmostime(d);
-    return 0;
+  struct rtcdate *d;
+  if(argptr(0, (void*)&d, sizeof(struct rtcdate)) < 0)
+    return -1;
+  cmostime(d);
+  return 0;
 }
 #endif
 
@@ -116,74 +116,66 @@ sys_date(void)
 int
 sys_getuid(void)
 {
-    if(proc->uid < 0 || proc->uid > 32767)
-        return -1;
-    return proc->uid;
+  if(proc->uid < 0 || proc->uid > 32767)
+    return -1;
+  return proc->uid;
 }
 
 int
 sys_getgid(void)
 {
-    if(proc->gid < 0 || proc->gid > 32767)
-        return -1;
-    return proc->gid;
+  if(proc->gid < 0 || proc->gid > 32767)
+    return -1;
+  return proc->gid;
 }
 
 int
 sys_getppid(void)
 {
-    if(!proc->parent)
-        return proc->pid;
-    if(proc->parent->pid < 0 || proc->parent->pid > 32767)
-        return -1;
-    return proc->parent->pid;
+  if(!proc->parent)
+    return proc->pid;
+  if(proc->parent->pid < 0 || proc->parent->pid > 32767)
+    return -1;
+  return proc->parent->pid;
 }
 
 int
 sys_setuid(void)
 {
-    int uid;
-    if(argint(0, &uid))
-        return -1;
-    else if(uid < 0 || uid > 32767)
-        return -1;
-    proc->uid = uid;
-    return 0;
+  int uid;
+  if(argint(0, &uid))
+    return -1;
+  else if(uid < 0 || uid > 32767){
+    return -1;
+  }
+  proc->uid = uid;
+  return 0;
 }
 
 int
 sys_setgid(void)
 {
-    int gid;
-    if(argint(0, &gid))
-        return -1;
-    else if(gid < 0 || gid > 32767)
-        return -1;
-    proc->gid = gid;
-    return 0;
+  int gid;
+  if(argint(0, &gid))
+    return -1;
+  else if(gid < 0 || gid > 32767){
+    return -1;
+  }
+  proc->gid = gid;
+  return 0;
 }
 
 int
 sys_getprocs(void)
 {
-    int max = 0;
-    uproc * procTable = NULL;
-    if(argint(0, &max) || argptr(1, (void*)&procTable, sizeof(uproc)))
-        return -1;
-    if(max > 72){
-        cprintf("\nIf you want to view all possible processes, set the process cap to 64.\n");
-        return -1;
-    }
-    int activeProcs = copyprocs(max, procTable);
-    return activeProcs;
-}
-
-int
-sys_time(void)
-{
-    char * name = NULL;
-    if(argptr(0, (void*)&name, sizeof(char*)))
-        return -1;
-    return 0;
+  int max = 0;
+  uproc * procTable = NULL;
+  if(argint(0, &max) || argptr(1, (void*)&procTable, sizeof(uproc)))
+    return -1;
+  if(max > 72){
+    return -1;
+  }
+  int activeProcs = copyprocs(max, procTable);
+  return activeProcs;
 }
 #endif
