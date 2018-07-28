@@ -82,6 +82,7 @@ date.h
 date.c
 time.c
 ps.c
+uproc.h
 chown.c
 chgrp.c
 chmod.c

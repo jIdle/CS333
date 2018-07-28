@@ -12,18 +12,18 @@
 
 #ifdef CS333_P3P4
 struct state_lists {
-  struct proc * ready;
-  struct proc * ready_tail;
   struct proc * free;
   struct proc * free_tail;
-  struct proc * sleep;
-  struct proc * sleep_tail;
-  struct proc * zombie;
-  struct proc * zombie_tail;
-  struct proc * running;
-  struct proc * running_tail;
   struct proc * embryo;
   struct proc * embryo_tail;
+  struct proc * sleep;
+  struct proc * sleep_tail;
+  struct proc * ready;
+  struct proc * ready_tail;
+  struct proc * running;
+  struct proc * running_tail;
+  struct proc * zombie;
+  struct proc * zombie_tail;
 };
 #endif
 
@@ -71,9 +71,15 @@ allocproc(void)
   char *sp;
 
   acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) //@ME //////////////////////////////////////////////////////
+#ifdef CS333_P3P4
+  p = ptable.pLists.free;
+  if(p)
+      goto found;
+#else
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == UNUSED)
       goto found;
+#endif
   release(&ptable.lock);
   return 0;
 
@@ -227,9 +233,11 @@ fork(void)
 
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
+#ifdef CS333_P3P4
   if(stateListRemove(&ptable.pLists.embryo, &ptable.pLists.embryo_tail, np) == -1)
     cprintf("\nstateListRemove() returned -1 in fork()\n");
   stateListAdd(&ptable.pLists.ready, &ptable.pLists.ready_tail, np);
+#endif
   np->state = RUNNABLE;
   release(&ptable.lock);
 
@@ -268,7 +276,7 @@ exit(void)
   wakeup1(proc->parent);
 
   // Pass abandoned children to init.
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME /////////////////////////////////////////////////////
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->parent == proc){
       p->parent = initproc;
       if(p->state == ZOMBIE)
@@ -308,11 +316,26 @@ exit(void)
     // Parent might be sleeping in wait().
     wakeup1(proc->parent);
 
-    // Pass abandoned children to init.
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME ////////////////////////////////////////////////////
+    // Pass abandoned children to init. 
+    for(p = ptable.pLists.embryo; p != NULL; p = p->next){
+        if(p->parent == proc)
+            p->parent = initproc;
+    }
+    for(p = ptable.pLists.sleep; p != NULL; p = p->next){
+        if(p->parent == proc)
+            p->parent = initproc;
+    }
+    for(p = ptable.pLists.ready; p != NULL; p = p->next){
+        if(p->parent == proc)
+            p->parent = initproc;
+    }
+    for(p = ptable.pLists.running; p != NULL; p = p->next){
+        if(p->parent == proc)
+            p->parent = initproc;
+    }
+    for(p = ptable.pLists.zombie; p != NULL; p = p->next){
         if(p->parent == proc){
             p->parent = initproc;
-            if(p->state == ZOMBIE)
             wakeup1(initproc);
         }
     }
@@ -340,7 +363,7 @@ wait(void)
   for(;;){
     // Scan through table looking for zombie children.
     havekids = 0;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME ///////////////////////////////////////////////////
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->parent != proc)
         continue;
       havekids = 1;
@@ -375,72 +398,50 @@ int
 wait(void)
 {
     struct proc *p;
-    int havekids, pid;
+    int onGoing = 0;
+    int pid = 0;
 
     acquire(&ptable.lock);
     for(;;){
-        // Scan through table looking for zombie children.
-        havekids = 0;
-        //for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME ////////////////////////////////////////////////
-        //    if(p->parent != proc)
-        //        continue;
-        //    havekids = 1;
-        //    if(p->state == ZOMBIE){
-        //        // Found one.
-        //        pid = p->pid;
-        //        kfree(p->kstack);
-        //        p->kstack = 0;
-        //        freevm(p->pgdir);
-        //        if(stateListRemove(&ptable.pLists.zombie, &ptable.pLists.zombie_tail, p) == -1)
-        //            cprintf("\nstateListRemove() returned -1 in wait()\n");
-        //        stateListAdd(&ptable.pLists.free, &ptable.pLists.free_tail, p);
-        //        p->state = UNUSED;
-        //        p->pid = 0;
-        //        p->parent = 0;
-        //        p->name[0] = 0;
-        //        p->killed = 0;
-        //        release(&ptable.lock);
-        //        return pid;
-        //    }
-        //}
-
-        //Can't manage to get this routine to search through JUST the zombie list for what it wants.
-        //For whatever reason the OS loops until crashes right on startup with this loop below.
-        //The loop above works perfectly though. After some testing I found out that the process "init"
-        //is (on startup) the only thing getting through, but it isn't passing the == ZOMBIE if statement
-        //above when entering in. This tells me it gets far enough to set the "havekids" variable to 1 
-        //but then stop and skip down to the two bottom if statements.
-        //
-        //I want to guess that we need to find some schema that mimics what the top loop already does,
-        //but still searches efficienctly by only going through the zombie list. May have to make some
-        //special cases to make this happen.
-        for(p = ptable.pLists.zombie; p != NULL; p = p->next){
+        for(p = ptable.pLists.embryo; p != NULL && onGoing == 0; p = p->next){ // These first 4 loops are checking for children processes that AREN'T zombies. 
+            if(p->parent == proc)
+                onGoing = 1;
+        }
+        for(p = ptable.pLists.sleep; p != NULL && onGoing == 0; p = p->next){   
+            if(p->parent == proc)
+                onGoing = 1;
+        }
+        for(p = ptable.pLists.running; p != NULL && onGoing == 0; p = p->next){ 
+            if(p->parent == proc)
+                onGoing = 1;
+        }
+        for(p = ptable.pLists.ready; p != NULL && onGoing == 0; p = p->next){   
+            if(p->parent == proc)
+                onGoing = 1;
+        }
+        for(p = ptable.pLists.zombie; p != NULL; p = p->next){  // Now, if proc DOES have any children, we know they will be in here. Otherwise, it has no children.
             if(p->parent != proc)
                 continue;
-            havekids = 1;
-            if(p->state == ZOMBIE){
-                // Found one.
-                pid = p->pid;
-                kfree(p->kstack);
-                p->kstack = 0;
-                freevm(p->pgdir);
-                if(stateListRemove(&ptable.pLists.zombie, &ptable.pLists.zombie_tail, p) == -1)
-                    cprintf("\nstateListRemove() returned -1 in wait()\n");
-                stateListAdd(&ptable.pLists.free, &ptable.pLists.free_tail, p);
-                p->state = UNUSED;
-                p->pid = 0;
-                p->parent = 0;
-                p->name[0] = 0;
-                p->killed = 0;
-                release(&ptable.lock);
-                return pid;
-            }
+            // Found one.
+            pid = p->pid;
+            kfree(p->kstack);
+            p->kstack = 0;
+            freevm(p->pgdir);
+            if(stateListRemove(&ptable.pLists.zombie, &ptable.pLists.zombie_tail, p) == -1)
+                cprintf("\nstateListRemove() returned -1 in wait()\n");
+            stateListAdd(&ptable.pLists.free, &ptable.pLists.free_tail, p);
+            p->state = UNUSED;
+            p->pid = 0;
+            p->parent = 0;
+            p->name[0] = 0;
+            p->killed = 0;
+            release(&ptable.lock);
+            return pid;
         }
 
-        // No point waiting if we don't have any children.
-        if(!havekids || proc->killed){
-            release(&ptable.lock);
-            return -1;
+        if(onGoing == 0 || proc->killed){ // This check means we have found no children in any of the process lists.
+          release(&ptable.lock);
+          return -1;
         }
 
         // Wait for children to exit.  (See wakeup1 call in proc_exit.)
@@ -472,7 +473,7 @@ scheduler(void)
     idle = 1;  // assume idle unless we schedule a process
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME ///////////////////////////////////////////////////
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
       
@@ -517,19 +518,16 @@ scheduler(void)
         idle = 1;  // assume idle unless we schedule a process
         acquire(&ptable.lock);
 
-        // Loop over process table looking for process to run.
-        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME ////////////////////////////////////////////////
-            if(p->state != RUNNABLE)
-                continue;
-
-            // Switch to chosen process.  It is the process's job
-            // to release ptable.lock and then reacquire it
-            // before jumping back to us.
-            idle = 0;  // not idle this timeslice
+        // The following section takes a RUNNABLE process and puts it into the RUNNING state.
+        // This doesn't actually need to be in a loop now, but for loop syntax will make it easier
+        // to be selective about which processes are chosen, if need be, later on.
+        for(p = ptable.pLists.ready; p != NULL; p = p->next){
+            idle = 0;
             proc = p;
             switchuvm(p);
+
             if(stateListRemove(&ptable.pLists.ready, &ptable.pLists.ready_tail, p) == -1)
-                cprintf("\nstateListRemove() returned -1 in scheduler()\nproc: %s\np: %s\n", proc->name, p->name);
+                cprintf("\nstateListRemove() returned -1 in scheduler()\n");
             stateListAdd(&ptable.pLists.running, &ptable.pLists.running_tail, p);
             p->state = RUNNING;
             p->cpu_ticks_in = ticks;
@@ -537,8 +535,6 @@ scheduler(void)
             swtch(&cpu->scheduler, proc->context);
             switchkvm();
 
-            // Process is done running for now.
-            // It should have changed its p->state before coming back.
             proc = 0;
         }
         release(&ptable.lock);
@@ -661,7 +657,7 @@ wakeup1(void *chan)
 {
   struct proc *p;
 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) //@ME //////////////////////////////////////////////////////
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan)
       p->state = RUNNABLE;
 }
@@ -671,8 +667,8 @@ wakeup1(void *chan)
 {
     struct proc *p;
 
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME /////////////////////////////////////////////////////
-        if(p->state == SLEEPING && p->chan == chan){
+    for(p = ptable.pLists.sleep; p != NULL; p = p->next){
+        if(p->chan == chan){
             if(stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleep_tail, p) == -1)
                 cprintf("\nstateListRemove() returned -1 in wakeup1()\n");
             stateListAdd(&ptable.pLists.ready, &ptable.pLists.ready_tail, p);
@@ -701,7 +697,7 @@ kill(int pid)
   struct proc *p;
 
   acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME /////////////////////////////////////////////////////
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->pid == pid){
       p->killed = 1;
       // Wake process from sleep if necessary.
@@ -721,16 +717,41 @@ kill(int pid)
     struct proc *p;
 
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME ///////////////////////////////////////////////////
+    for(p = ptable.pLists.embryo; p != NULL; p = p->next){
         if(p->pid == pid){
             p->killed = 1;
-            // Wake process from sleep if necessary.
-            if(p->state == SLEEPING){
-                if(stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleep_tail, p) == -1)
-                    cprintf("\nstateListRemove() returned -1 in kill()\n");
-                stateListAdd(&ptable.pLists.ready, &ptable.pLists.ready_tail, p);
-                p->state = RUNNABLE;
-            }
+            release(&ptable.lock);
+            return 0;
+        }
+    }
+    for(p = ptable.pLists.running; p != NULL; p = p->next){
+        if(p->pid == pid){
+            p->killed = 1;
+            release(&ptable.lock);
+            return 0;
+        }
+    }
+    for(p = ptable.pLists.ready; p != NULL; p = p->next){
+        if(p->pid == pid){
+            p->killed = 1;
+            release(&ptable.lock);
+            return 0;
+        }
+    }
+    for(p = ptable.pLists.zombie; p != NULL; p = p->next){
+        if(p->pid == pid){
+            p->killed = 1;
+            release(&ptable.lock);
+            return 0;
+        }
+    }
+    for(p = ptable.pLists.sleep; p != NULL; p = p->next){
+        if(p->pid == pid){
+            p->killed = 1;
+            if(stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleep_tail, p) == -1)
+                cprintf("\nstateListRemove() returned -1 in kill()\n");
+            stateListAdd(&ptable.pLists.ready, &ptable.pLists.ready_tail, p);
+            p->state = RUNNABLE;
             release(&ptable.lock);
             return 0;
         }
@@ -739,15 +760,6 @@ kill(int pid)
     return -1;
 }
 #endif
-
-//static char *states[] = {
-//  [UNUSED]    "unused",
-//  [EMBRYO]    "embryo",
-//  [SLEEPING]  "sleep ",
-//  [RUNNABLE]  "runble",
-//  [RUNNING]   "run   ",
-//  [ZOMBIE]    "zombie"
-//};
 
 static char *states[] = {
   [UNUSED]    "unused",
@@ -772,7 +784,7 @@ procdump(void)
 #ifdef CS333_P1
   cprintf("\nPID\tName\tUID\tGID\tPPID\tElapsed\t\tCPU\tState\tSize\tPCs");
 #endif
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ //@ME /////////////////////////////////////////////////////
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
       continue;
     if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
@@ -829,7 +841,7 @@ copyprocs(int max, uproc * procTable)
 {
   acquire(&ptable.lock);
   int activeProcs = 0;
-  struct proc * pPtr = ptable.proc; //@ME ptable proc array is directly referenced here.
+  struct proc * pPtr = ptable.proc;
 
   // This loops copies data from the ptable processes my uproc structs.
   for(int i = 0; i < NPROC; ++i){
@@ -863,6 +875,19 @@ copyprocs(int max, uproc * procTable)
 #endif
 
 #ifdef CS333_P3P4
+
+// stateListVerify will make sure that any process ACTUALLY has been removed from one list, and placed
+// into another. It does this by taking as arguments: the int form of the state list the process was
+// removed from, the int form of the state list the process was added to, and the process itself 
+// which is used for comparison in both of those lists. The "int form" that I'm mentioning is used
+// by accessing the pLists struct with array syntax so I can abstract the process to access any one
+// state list. Otherwise I would have to manually check each state list for confirmation of removal
+// and insertion. Use your test/example programs as reference for building this one.
+static void
+stateListVerify(int removedState, int insertedState, struct proc * p) 
+{
+}
+
 static void
 stateListAdd(struct proc** head, struct proc** tail, struct proc* p)
 {

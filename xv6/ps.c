@@ -4,10 +4,8 @@
 #include "uproc.h"
 
 #define MAX 64 // This is the maximum number of entries uproc array will allow.
-#define NULL (void *)0
 
 void display(int activeProcs, uproc * procTable); // Displays uproc array data.
-void init(uproc * procTable);
 
 int
 main(void)
@@ -32,7 +30,7 @@ void display(int activeProcs, uproc * procTable){
     int index = 0;
     int counter = 0;
     while(counter != activeProcs){
-        if(procTable[index].size){
+        if(procTable[index].pid){
             printf(1, "%d\t%s\t%d\t%d\t%d\t%d.%d\t\t%d.%d\t%s\t%d\n",
                     procTable[index].pid,
                     procTable[index].name,
