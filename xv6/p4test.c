@@ -1,3 +1,7 @@
+
+// Commented out for the duration of Project 3. Will re-activate for Project 4 testing.
+// - Kobe Davis
+
 //#ifdef CS333_P3P4
 //// Credit to Jacob Collins <jmc27@pdx.edu> who developed this test
 //// program and gave me permission to use it

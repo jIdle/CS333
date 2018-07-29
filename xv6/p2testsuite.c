@@ -167,6 +167,7 @@ getcputime(char * name, struct uproc * table){
 
   size = getprocs(64, table);
   for(int i = 0; i < size; ++i){
+    printf(2, "\nProcess Name: %s\n", table[i].name);
     if(strcmp(table[i].name, name) == 0){
       p = table + i;
       break;

@@ -190,10 +190,26 @@ void
 consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
+  int readyL = 0;
+  int freeL = 0;
+  int sleepL = 0;
+  int zombieL = 0;
 
   acquire(&cons.lock);
   while((c = getc()) >= 0){
     switch(c){
+    case C('R'):
+        readyL = 1;
+        break;
+    case C('F'):
+        freeL = 1;
+        break;
+    case C('S'):
+        sleepL = 1;
+        break;
+    case C('Z'):
+        zombieL = 1;
+        break;
     case C('P'):  // Process listing.
       doprocdump = 1;   // procdump() locks cons.lock indirectly; invoke later
       break;
@@ -224,7 +240,19 @@ consoleintr(int (*getc)(void))
     }
   }
   release(&cons.lock);
-  if(doprocdump) {
+  if(readyL) {
+      displayReady();
+  }
+  else if(freeL) {
+      displayFree();
+  }
+  else if(sleepL) {
+      displaySleep();
+  }
+  else if(zombieL) {
+      displayZombie();
+  }
+  else if(doprocdump) {
     procdump();  // now call procdump() wo. cons.lock held
   }
 }

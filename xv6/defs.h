@@ -123,6 +123,12 @@ void            yield(void);
 int             copyprocs(int max, struct uproc * procTable);
 int             h_getppid(struct proc * p);
 #endif
+#ifdef CS333_P3P4
+void            displayReady(void);
+void            displayFree(void);
+void            displaySleep(void);
+void            displayZombie(void);
+#endif
 
 // swtch.S
 void            swtch(struct context**, struct context*);

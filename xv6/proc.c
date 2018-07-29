@@ -24,7 +24,7 @@ struct state_lists {
   struct proc * running_tail;
   struct proc * zombie;
   struct proc * zombie_tail;
-};
+} state_lists;
 #endif
 
 struct {
@@ -43,6 +43,7 @@ extern void trapret(void);
 static void wakeup1(void *chan);
 
 #ifdef CS333_P3P4
+static int stateListVerify(int rmState, int insState, struct proc * toCheck);
 static void initProcessLists(void);
 static void initFreeList(void);
 // __attribute__ ((unused)) suppresses warnings for routines that are not
@@ -88,8 +89,14 @@ found:
   if(stateListRemove(&ptable.pLists.free, &ptable.pLists.free_tail, p) == -1)
     cprintf("\nstateListRemove() returned -1 in allocproc()\n");
   stateListAdd(&ptable.pLists.embryo, &ptable.pLists.embryo_tail, p);
+  int from = p->state;
 #endif
   p->state = EMBRYO;
+#ifdef CS333_P3P4
+  int to = p->state;
+  if(!stateListVerify(from, to, p))
+    panic("allocproc: state transition failure");
+#endif
   p->pid = nextpid++;
   release(&ptable.lock);
 
@@ -160,9 +167,15 @@ userinit(void)
   if(stateListRemove(&ptable.pLists.embryo, &ptable.pLists.embryo_tail, p) == -1)
     cprintf("\nstateRemoveList() returned -1 in userinit()\n");
   stateListAdd(&ptable.pLists.ready, &ptable.pLists.ready_tail, p);
-  release(&ptable.lock);
+  int from = p->state;
 #endif
   p->state = RUNNABLE;
+#ifdef CS333_P3P4
+  int to = p->state;
+  if(!stateListVerify(from, to, p))
+    panic("userinit: state transition failure");
+  release(&ptable.lock);
+#endif
 
 #ifdef CS333_P2
   p->parent = NULL;
@@ -237,8 +250,14 @@ fork(void)
   if(stateListRemove(&ptable.pLists.embryo, &ptable.pLists.embryo_tail, np) == -1)
     cprintf("\nstateListRemove() returned -1 in fork()\n");
   stateListAdd(&ptable.pLists.ready, &ptable.pLists.ready_tail, np);
+  int from = np->state;
 #endif
   np->state = RUNNABLE;
+#ifdef CS333_P3P4
+  int to = np->state;
+  if(!stateListVerify(from, to, np))
+    panic("fork: state transition failure");
+#endif
   release(&ptable.lock);
 
   return pid;
@@ -344,7 +363,11 @@ exit(void)
     if(stateListRemove(&ptable.pLists.running, &ptable.pLists.running_tail, proc) == -1)
         cprintf("\nstateListRemove() has returned -1 in exit()\n");
     stateListAdd(&ptable.pLists.zombie, &ptable.pLists.zombie_tail, proc);
+    int from = proc->state;
     proc->state = ZOMBIE;
+    int to = proc->state;
+    if(!stateListVerify(from, to, proc))
+        panic("exit: state transition failure");
     sched();
     panic("zombie exit");
 }
@@ -430,7 +453,11 @@ wait(void)
             if(stateListRemove(&ptable.pLists.zombie, &ptable.pLists.zombie_tail, p) == -1)
                 cprintf("\nstateListRemove() returned -1 in wait()\n");
             stateListAdd(&ptable.pLists.free, &ptable.pLists.free_tail, p);
+            int from = p->state;
             p->state = UNUSED;
+            int to = p->state;
+            if(!stateListVerify(from, to, p))
+                panic("wait: state transition failure");
             p->pid = 0;
             p->parent = 0;
             p->name[0] = 0;
@@ -519,7 +546,7 @@ scheduler(void)
         acquire(&ptable.lock);
 
         // The following section takes a RUNNABLE process and puts it into the RUNNING state.
-        // This doesn't actually need to be in a loop now, but for loop syntax will make it easier
+        // This doesn't actually need to be in a loop now, but for-loop syntax will make it easier
         // to be selective about which processes are chosen, if need be, later on.
         for(p = ptable.pLists.ready; p != NULL; p = p->next){
             idle = 0;
@@ -529,7 +556,11 @@ scheduler(void)
             if(stateListRemove(&ptable.pLists.ready, &ptable.pLists.ready_tail, p) == -1)
                 cprintf("\nstateListRemove() returned -1 in scheduler()\n");
             stateListAdd(&ptable.pLists.running, &ptable.pLists.running_tail, p);
+            int from = p->state;
             p->state = RUNNING;
+            int to = p->state;
+            if(!stateListVerify(from, to, p))
+                panic("scheduler: state transition failure");
             p->cpu_ticks_in = ticks;
 
             swtch(&cpu->scheduler, proc->context);
@@ -580,8 +611,14 @@ yield(void)
   if(stateListRemove(&ptable.pLists.running, &ptable.pLists.running_tail, proc) == -1)
     cprintf("\nstateListRemove() returned -1 in yield()\n");
   stateListAdd(&ptable.pLists.ready, &ptable.pLists.ready_tail, proc);
+  int from = proc->state;
 #endif
   proc->state = RUNNABLE;
+#ifdef CS333_P3P4
+  int to = proc->state;
+  if(!stateListVerify(from, to, proc))
+    panic("yield: state transition failure");
+#endif
   sched();
   release(&ptable.lock);
 }
@@ -634,8 +671,14 @@ sleep(void *chan, struct spinlock *lk)
   if(stateListRemove(&ptable.pLists.running, &ptable.pLists.running_tail, proc) == -1)
     cprintf("\nstateListRemove() returned -1 in sleep()\n");
   stateListAdd(&ptable.pLists.sleep, &ptable.pLists.sleep_tail, proc);
+  int from = proc->state;
 #endif
   proc->state = SLEEPING;
+#ifdef CS333_P3P4
+  int to = proc->state;
+  if(!stateListVerify(from, to, proc))
+    panic("sleep: state transition failure");
+#endif
   sched();
 
   // Tidy up.
@@ -672,7 +715,11 @@ wakeup1(void *chan)
             if(stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleep_tail, p) == -1)
                 cprintf("\nstateListRemove() returned -1 in wakeup1()\n");
             stateListAdd(&ptable.pLists.ready, &ptable.pLists.ready_tail, p);
+            int from = p->state;
             p->state = RUNNABLE;
+            int to = p->state;
+            if(!stateListVerify(from, to, p))
+                panic("wakeup1: state transition failure");
         }
     }
 }
@@ -751,7 +798,11 @@ kill(int pid)
             if(stateListRemove(&ptable.pLists.sleep, &ptable.pLists.sleep_tail, p) == -1)
                 cprintf("\nstateListRemove() returned -1 in kill()\n");
             stateListAdd(&ptable.pLists.ready, &ptable.pLists.ready_tail, p);
+            int from = p->state;
             p->state = RUNNABLE;
+            int to = p->state;
+            if(!stateListVerify(from, to, p))
+                panic("kill: state transition failure");
             release(&ptable.lock);
             return 0;
         }
@@ -826,6 +877,78 @@ procdump(void)
   cprintf("\n\n");
 }
 
+#ifdef CS333_P3P4
+void
+displayReady(void)
+{
+    cprintf("\nReady List Processes:\n");
+    int first = 1;
+    struct proc * current = NULL;
+    acquire(&ptable.lock);
+    for(current = ptable.pLists.ready; current != NULL; current = current->next) {
+        if(first){
+            --first;
+            cprintf("%d", current->pid);
+            continue;
+        }
+        cprintf(" -> %d", current->pid);
+    }
+    release(&ptable.lock);
+    cprintf("\n");
+}
+
+void
+displayFree(void)
+{
+    int counter = 0;
+    struct proc * current = NULL;
+    acquire(&ptable.lock);
+    for(current = ptable.pLists.free; current != NULL; current = current->next) {
+        ++counter;
+    }
+    release(&ptable.lock);
+    cprintf("\nFree List Size: %d processes\n", counter);
+}
+
+void
+displaySleep(void)
+{
+    cprintf("\nSleep List Processes:\n");
+    int first = 1;
+    struct proc * current = NULL;
+    acquire(&ptable.lock);
+    for(current = ptable.pLists.sleep; current != NULL; current = current->next) {
+        if(first){
+            --first;
+            cprintf("%d", current->pid);
+            continue;
+        }
+        cprintf(" -> %d", current->pid);
+    }
+    release(&ptable.lock);
+    cprintf("\n");
+}
+
+void
+displayZombie(void)
+{
+    cprintf("\nZombie List Processes:\n");
+    int first = 1;
+    struct proc * current = NULL;
+    acquire(&ptable.lock);
+    for(current = ptable.pLists.zombie; current != NULL; current = current->next) {
+        if(first){
+            --first;
+            cprintf("(%d, %d)", current->pid, h_getppid(current));
+            continue;
+        }
+        cprintf(" -> (%d, %d)", current->pid, h_getppid(current));
+    }
+    release(&ptable.lock);
+    cprintf("\n");
+}
+#endif
+
 #ifdef CS333_P2
 int h_getppid(struct proc * p)
 {
@@ -883,9 +1006,22 @@ copyprocs(int max, uproc * procTable)
 // by accessing the pLists struct with array syntax so I can abstract the process to access any one
 // state list. Otherwise I would have to manually check each state list for confirmation of removal
 // and insertion. Use your test/example programs as reference for building this one.
-static void
-stateListVerify(int removedState, int insertedState, struct proc * p) 
+static int
+stateListVerify(int rmState, int insState, struct proc * toCheck)
 {
+    struct proc ** startAddr = (struct proc**)(&ptable.pLists);
+    struct proc * current = NULL;
+    rmState = 2*rmState;    // Multiplying by two to skip tail pointers in state list.
+    insState = 2*insState;
+    for(current = *(startAddr + rmState); current != NULL; current = current->next) {
+        if(toCheck == current)
+            return 0;
+    }
+    for(current = *(startAddr + insState); current != NULL; current = current->next) {
+        if(toCheck == current)
+            return 1;
+    }
+    return 0;
 }
 
 static void

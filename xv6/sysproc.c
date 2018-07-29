@@ -170,7 +170,7 @@ sys_getprocs(void)
 {
   int max = 0;
   uproc * procTable = NULL;
-  if(argint(0, &max) || argptr(1, (void*)&procTable, sizeof(uproc)))
+  if(argint(0, &max) || argptr(1, (void*)&procTable, max*sizeof(uproc)))
     return -1;
   if(max > 72){
     return -1;
