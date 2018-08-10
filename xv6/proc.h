@@ -49,7 +49,7 @@ struct context {
   uint eip;
 };
 
-enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNING, ZOMBIE, RUNNABLE };
 
 // Per-process state
 struct proc {
@@ -77,6 +77,8 @@ struct proc {
 #endif
 #ifdef CS333_P3P4
   struct proc * next;
+  uint priority;
+  int budget;
 #endif
 };
 

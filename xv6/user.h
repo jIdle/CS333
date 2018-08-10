@@ -36,6 +36,10 @@ int setuid(uint);       // Set UID.
 int setgid(uint);       // Set GID.
 int getprocs(uint max, struct uproc * table);
 #endif
+#ifdef CS333_P3P4
+int setpriority(int pid, int priority);
+int getpriority(int pid);
+#endif
 
 // ulib.c
 int stat(char*, struct stat*);

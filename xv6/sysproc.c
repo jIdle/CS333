@@ -179,3 +179,16 @@ sys_getprocs(void)
   return activeProcs;
 }
 #endif
+#ifdef CS333_P3P4
+int
+sys_setpriority(void)
+{
+    return 0;
+}
+
+int
+sys_getpriority(void)
+{
+    return 0;
+}
+#endif
