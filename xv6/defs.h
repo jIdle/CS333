@@ -128,6 +128,9 @@ void            displayReady(void);
 void            displayFree(void);
 void            displaySleep(void);
 void            displayZombie(void);
+int             promotion(void);
+int             setpriority(int pid, int priority);
+int             getpriority(int pid);
 #endif
 
 // swtch.S

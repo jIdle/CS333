@@ -6,9 +6,6 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
-#ifdef CS333_P1
-#define NULL (void*)0
-#endif
 #ifdef CS333_P2
 #include "uproc.h"
 #endif
@@ -183,12 +180,45 @@ sys_getprocs(void)
 int
 sys_setpriority(void)
 {
+    int pid = 0;
+    int priority = 0;
+    if(argint(0, &pid) || argint(1, &priority))
+        return -1;
+    if(pid < 0 || pid > 32767)
+        return -1;
+    if(!setpriority(pid, priority))
+        return -1;
     return 0;
 }
 
 int
 sys_getpriority(void)
 {
-    return 0;
+    int pid = 0;
+    if(argint(0, &pid))
+        return -1;
+    if(pid < 0 || pid > 32767)
+        return -1;
+    int priority = getpriority(pid);
+    if(!priority)
+        return -1;
+    return priority;
 }
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

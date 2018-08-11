@@ -26,17 +26,18 @@ main(void)
 }
 
 void display(int activeProcs, uproc * procTable){
-    printf(1, "PID\tName\tUID\tGID\tPPID\tElapsed\t\tCPU\tState\tSize\n");
+    printf(1, "PID\tName\tUID\tGID\tPPID\tPriority\tElapsed\t\tCPU\tState\tSize\n");
     int index = 0;
     int counter = 0;
     while(counter != activeProcs){
         if(procTable[index].pid){
-            printf(1, "%d\t%s\t%d\t%d\t%d\t%d.%d\t\t%d.%d\t%s\t%d\n",
+            printf(1, "%d\t%s\t%d\t%d\t%d\t%d\t\t%d.%d\t\t%d.%d\t%s\t%d\n",
                     procTable[index].pid,
                     procTable[index].name,
                     procTable[index].uid,
                     procTable[index].gid,
                     procTable[index].ppid,
+                    procTable[index].priority,
                     procTable[index].elapsed_ticks/1000,
                     procTable[index].elapsed_ticks%1000,
                     procTable[index].CPU_total_ticks/1000,

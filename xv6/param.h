@@ -17,3 +17,10 @@
 #define FUID          0  // default uid assigned to the first process 
 #define FGID          0  // default gid assigned to the first process
 #endif
+
+#ifdef CS333_P3P4
+#define NULL (void *)0
+#define MAXPRIO 4
+#define BUDGET 50
+#define TICKS_TO_PROMOTE 500
+#endif
