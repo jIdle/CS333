@@ -205,20 +205,3 @@ sys_getpriority(void)
     return priority;
 }
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

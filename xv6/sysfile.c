@@ -440,3 +440,94 @@ sys_pipe(void)
   fd[1] = fd1;
   return 0;
 }
+
+#ifdef CS333_P5
+int
+sys_chmod(void)
+{
+    struct inode * file = NULL;
+    char * path = NULL;
+    int mode = 0; 
+
+    begin_op();
+    if(argstr(0, &path) == -1 || argint(1, &mode)){
+        end_op();
+        return -1;
+    }
+
+    file = namei(path);
+    ilock(file);
+    if(!file){
+        iunlock(file);
+        end_op();
+        return -1;
+    }
+
+    file->mode.asInt = mode;
+    iunlock(file);
+    end_op();
+    return 0;
+}
+
+int
+sys_chown(void)
+{
+    struct inode * file = NULL;
+    char * path = NULL;
+    int uid = 0; 
+
+    begin_op();
+    if(argstr(0, &path) == -1 || argint(1, &uid) || uid < 0 || uid > 32767){
+        end_op();
+        return -1;
+    }
+
+    file = namei(path);
+    ilock(file);
+    if(!file){
+        iunlock(file);
+        end_op();
+        return -1;
+    }
+
+    file->uid = uid;
+    iunlock(file);
+    end_op();
+    return 0;
+}
+
+int sys_chgrp(void)
+{
+    struct inode * file = NULL;
+    char * path = NULL;
+    int gid = 0; 
+
+    begin_op();
+    if(argstr(0, &path) == -1 || argint(1, &gid) || gid < 0 || gid > 32767){
+        end_op();
+        return -1;
+    }
+
+    file = namei(path);
+    ilock(file);
+    if(!file){
+        iunlock(file);
+        end_op();
+        return -1;
+    }
+
+    file->gid = gid;
+    iunlock(file);
+    end_op();
+    return 0;
+}
+#endif
+
+
+
+
+
+
+
+
+

@@ -180,7 +180,11 @@ userinit(void)
   release(&ptable.lock);
 #endif
 
-#ifdef CS333_P2
+#ifdef CS333_P5
+  p->parent = NULL;
+  p->uid = DEFAULT_UID;
+  p->gid = DEFAULT_GID;
+#elif CS333_P2
   p->parent = NULL;
   p->uid = FUID;
   p->gid = FGID;

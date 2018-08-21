@@ -2,10 +2,19 @@
 #include "types.h"
 #include "user.h"
 int
-main(void)
+main(int argc, char *argv[])
 {
-  printf(1, "Not imlpemented yet.\n");
-  exit();
+    if(argc != 3) {
+        printf(2, "\nError: Incorrect number of arguments. %s at line %d\n", __FILE__, __LINE__);
+        exit();
+    }
+    int mode = atoi(argv[1]);
+    char * path = argv[2];
+    if(chmod(path, mode)) {
+        printf(2, "\nError: System call 'chmod' return failure. %s at line %d\n", __FILE__, __LINE__);
+        exit();
+    }
+    printf(1, "\nSuccesfully changed file mode.\n");
+    exit();
 }
-
 #endif
