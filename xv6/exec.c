@@ -6,8 +6,7 @@
 #include "defs.h"
 #include "x86.h"
 #include "elf.h"
-#include "fs.h"
-#include "file.h"
+#include "stat.h"
 
 int
 exec(char *path, char **argv)
@@ -28,27 +27,31 @@ exec(char *path, char **argv)
   ilock(ip);
 
 #ifdef CS333_P5
-  if(proc->uid == ip->uid){
-    if(!ip->mode.flags.u_x){
+
+  struct stat checkPermissions;
+  stati(ip, &checkPermissions);
+
+  if(proc->uid == checkPermissions.uid){
+    if(!checkPermissions.mode.flags.u_x){
       iunlock(ip);
       end_op();
       return -1;
     }
   }
-  else if(proc->gid == ip->gid){
-    if(!ip->mode.flags.g_x){
+  else if(proc->gid == checkPermissions.gid){
+    if(!checkPermissions.mode.flags.g_x){
       iunlock(ip);
       end_op();
       return -1;
     }
   }
-  else if(!ip->mode.flags.o_x){
+  else if(!checkPermissions.mode.flags.o_x){
     iunlock(ip);
     end_op();
     return -1;
   }
-  if(ip->mode.flags.setuid)
-    proc->uid = ip->uid;
+  if(checkPermissions.mode.flags.setuid)
+    proc->uid = checkPermissions.uid;
 #endif
 
   pgdir = 0;

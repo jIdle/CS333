@@ -55,7 +55,7 @@ ls(char *path)
     print_mode(&st);
     printf(1, "%s\t%d\t%d\t%d\t%d\n", fmtname(path), st.uid, st.gid, st.ino, st.size);
 #else
-    printf(1, "%s %d %d %d\n", fmtname(path), st.type, st.ino. st.size);
+    printf(1, "%s %d %d %d\n", fmtname(path), st.type, st.ino, st.size);
 #endif
     break;
   
