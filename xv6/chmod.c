@@ -4,17 +4,17 @@
 int
 main(int argc, char *argv[])
 {
-    if(argc != 3) {
-        printf(2, "\nError: Incorrect number of arguments. %s at line %d\n", __FILE__, __LINE__);
-        exit();
-    }
-    int mode = atoi(argv[1]);
-    char * path = argv[2];
-    if(chmod(path, mode)) {
-        printf(2, "\nError: System call 'chmod' return failure. %s at line %d\n", __FILE__, __LINE__);
-        exit();
-    }
-    printf(1, "\nSuccesfully changed file mode.\n");
+  if(argc != 3) {
+    printf(2, "\n%s:%d: Error: Incorrect number of arguments.\n", __FILE__, __LINE__);
     exit();
+  }
+  int mode = atoi(argv[1]);
+  char * path = argv[2];
+  if(chmod(path, mode)) {
+    printf(2, "\n%s:%d: Error: System call 'chmod' return failure.\n", __FILE__, __LINE__);
+    exit();
+  }
+  printf(1, "\nSuccesfully changed file mode.\n");
+  exit();
 }
 #endif

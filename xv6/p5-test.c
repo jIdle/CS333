@@ -49,6 +49,7 @@ doSetuidTest (char **cmd)
   printf(1, "\nTesting the set uid bit.\n\n");
 
   for (i=0; i<NUMPERMSTOCHECK; i++) {
+    printf(1, "\n\n");
     printf(1, "Starting test: %s.\n", test[i]);
     check(setuid(testperms[i][procuid]));
     check(setgid(testperms[i][procgid]));
@@ -69,6 +70,7 @@ doSetuidTest (char **cmd)
       exec(cmd[0], cmd);
       if (i != NUMPERMSTOCHECK-1) printf(2, "**** exec call for %s **FAILED**.\n",  cmd[0]);
       else printf(2, "**** exec call for %s **FAILED as expected.\n", cmd[0]);
+      printf(1, "\n");
       exit();
     }
     wait();

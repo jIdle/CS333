@@ -6,6 +6,8 @@
 #include "defs.h"
 #include "x86.h"
 #include "elf.h"
+#include "fs.h"
+#include "file.h"
 
 int
 exec(char *path, char **argv)
@@ -24,6 +26,31 @@ exec(char *path, char **argv)
     return -1;
   }
   ilock(ip);
+
+#ifdef CS333_P5
+  if(proc->uid == ip->uid){
+    if(!ip->mode.flags.u_x){
+      iunlock(ip);
+      end_op();
+      return -1;
+    }
+  }
+  else if(proc->gid == ip->gid){
+    if(!ip->mode.flags.g_x){
+      iunlock(ip);
+      end_op();
+      return -1;
+    }
+  }
+  else if(!ip->mode.flags.o_x){
+    iunlock(ip);
+    end_op();
+    return -1;
+  }
+  if(ip->mode.flags.setuid)
+    proc->uid = ip->uid;
+#endif
+
   pgdir = 0;
 
   // Check ELF header

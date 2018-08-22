@@ -57,6 +57,7 @@ print_mode(struct stat* st)
   else
     printf(1, "-");
 
+  printf(1, "\t");
   return;
 }
 #endif

@@ -401,6 +401,7 @@ sys_exec(void)
   if(argstr(0, &path) < 0 || argint(1, (int*)&uargv) < 0){
     return -1;
   }
+
   memset(argv, 0, sizeof(argv));
   for(i=0;; i++){
     if(i >= NELEM(argv))
@@ -445,89 +446,85 @@ sys_pipe(void)
 int
 sys_chmod(void)
 {
-    struct inode * file = NULL;
-    char * path = NULL;
-    int mode = 0; 
+  struct inode * file = NULL;
+  char * path = NULL;
+  int mode = 0; 
 
-    begin_op();
-    if(argstr(0, &path) == -1 || argint(1, &mode)){
-        end_op();
-        return -1;
-    }
+  begin_op();
+  if(argstr(0, &path) == -1 || argint(1, &mode)){
+    end_op();
+    return -1;
+  }
 
-    file = namei(path);
-    ilock(file);
-    if(!file){
-        iunlock(file);
-        end_op();
-        return -1;
-    }
-
-    file->mode.asInt = mode;
+  file = namei(path);
+  ilock(file);
+  if(!file){
     iunlock(file);
     end_op();
-    return 0;
+    return -1;
+  }
+  if(mode > 01777 || mode < 0){ // If mode is not a valid permission bit setting.
+    iunlock(file);
+    end_op();
+    return -1;
+  }
+
+  file->mode.asInt = mode;
+  iunlock(file);
+  end_op();
+  return 0;
 }
 
 int
 sys_chown(void)
 {
-    struct inode * file = NULL;
-    char * path = NULL;
-    int uid = 0; 
+  struct inode * file = NULL;
+  char * path = NULL;
+  int uid = 0; 
 
-    begin_op();
-    if(argstr(0, &path) == -1 || argint(1, &uid) || uid < 0 || uid > 32767){
-        end_op();
-        return -1;
-    }
+  begin_op();
+  if(argstr(0, &path) == -1 || argint(1, &uid) || uid < 0 || uid > 32767){
+    end_op();
+    return -1;
+  }
 
-    file = namei(path);
-    ilock(file);
-    if(!file){
-        iunlock(file);
-        end_op();
-        return -1;
-    }
-
-    file->uid = uid;
+  file = namei(path);
+  ilock(file);
+  if(!file){
     iunlock(file);
     end_op();
-    return 0;
+    return -1;
+  }
+
+  file->uid = uid;
+  iunlock(file);
+  end_op();
+  return 0;
 }
 
 int sys_chgrp(void)
 {
-    struct inode * file = NULL;
-    char * path = NULL;
-    int gid = 0; 
+  struct inode * file = NULL;
+  char * path = NULL;
+  int gid = 0; 
 
-    begin_op();
-    if(argstr(0, &path) == -1 || argint(1, &gid) || gid < 0 || gid > 32767){
-        end_op();
-        return -1;
-    }
+  begin_op();
+  if(argstr(0, &path) == -1 || argint(1, &gid) || gid < 0 || gid > 32767){
+    end_op();
+    return -1;
+  }
 
-    file = namei(path);
-    ilock(file);
-    if(!file){
-        iunlock(file);
-        end_op();
-        return -1;
-    }
-
-    file->gid = gid;
+  file = namei(path);
+  ilock(file);
+  if(!file){
     iunlock(file);
     end_op();
-    return 0;
+    return -1;
+  }
+
+  file->gid = gid;
+  iunlock(file);
+  end_op();
+  return 0;
 }
 #endif
-
-
-
-
-
-
-
-
-
